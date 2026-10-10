@@ -1,5 +1,7 @@
 name: CIFuzz
 on: [pull_request]
+permissions:
+  contents: read
 jobs:
  Fuzzing:
    runs-on: ubuntu-latest
@@ -12,24 +14,22 @@ jobs:
      with:
        fetch-depth: 0
        persist-credentials: false
-   - name: Resolve the upstream fuzz harness against this fork
-     # OSS-Fuzz's harness imports github.com/mattn/go-sqlite3. Keep that
-     # import on the checked-out code instead of downloading the upstream.
-     run: go mod edit -require=github.com/mattn/go-sqlite3@v1.14.48 -replace=github.com/mattn/go-sqlite3=.
    - name: Build Fuzzers (${{ matrix.sanitizer }})
-     uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
+     uses: google/clusterfuzzlite/actions/build_fuzzers@v1
      with:
-       oss-fuzz-project-name: 'go-sqlite3'
+       language: go
        project-src-path: ${{ github.workspace }}
        dry-run: false
        sanitizer: ${{ matrix.sanitizer }}
    - name: Run Fuzzers (${{ matrix.sanitizer }})
-     uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
+     uses: google/clusterfuzzlite/actions/run_fuzzers@v1
      with:
-       oss-fuzz-project-name: 'go-sqlite3'
+       language: go
        fuzz-seconds: 600
        dry-run: false
        sanitizer: ${{ matrix.sanitizer }}
+       mode: code-change
+       github-token: ${{ secrets.GITHUB_TOKEN }}
    - name: Upload Crash
      uses: actions/upload-artifact@v4
      if: failure()
