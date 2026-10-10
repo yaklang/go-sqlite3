@@ -8,10 +8,19 @@ jobs:
      matrix:
        sanitizer: [address]
    steps:
+   - uses: actions/checkout@v4
+     with:
+       fetch-depth: 0
+       persist-credentials: false
+   - name: Resolve the upstream fuzz harness against this fork
+     # OSS-Fuzz's harness imports github.com/mattn/go-sqlite3. Keep that
+     # import on the checked-out code instead of downloading the upstream.
+     run: go mod edit -require=github.com/mattn/go-sqlite3@v1.14.48 -replace=github.com/mattn/go-sqlite3=.
    - name: Build Fuzzers (${{ matrix.sanitizer }})
      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
      with:
        oss-fuzz-project-name: 'go-sqlite3'
+       project-src-path: ${{ github.workspace }}
        dry-run: false
        sanitizer: ${{ matrix.sanitizer }}
    - name: Run Fuzzers (${{ matrix.sanitizer }})
