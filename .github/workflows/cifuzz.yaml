@@ -1,5 +1,7 @@
 name: CIFuzz
 on: [pull_request]
+permissions:
+  contents: read
 jobs:
  Fuzzing:
    runs-on: ubuntu-latest
@@ -8,19 +10,26 @@ jobs:
      matrix:
        sanitizer: [address]
    steps:
-   - name: Build Fuzzers (${{ matrix.sanitizer }})
-     uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
+   - uses: actions/checkout@v4
      with:
-       oss-fuzz-project-name: 'go-sqlite3'
+       fetch-depth: 0
+       persist-credentials: false
+   - name: Build Fuzzers (${{ matrix.sanitizer }})
+     uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+     with:
+       language: go
+       project-src-path: ${{ github.workspace }}
        dry-run: false
        sanitizer: ${{ matrix.sanitizer }}
    - name: Run Fuzzers (${{ matrix.sanitizer }})
-     uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
+     uses: google/clusterfuzzlite/actions/run_fuzzers@v1
      with:
-       oss-fuzz-project-name: 'go-sqlite3'
+       language: go
        fuzz-seconds: 600
        dry-run: false
        sanitizer: ${{ matrix.sanitizer }}
+       mode: code-change
+       github-token: ${{ secrets.GITHUB_TOKEN }}
    - name: Upload Crash
      uses: actions/upload-artifact@v4
      if: failure()
